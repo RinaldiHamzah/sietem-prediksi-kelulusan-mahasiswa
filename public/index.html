@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎓 Prediksi Kelulusan Mahasiswa - Decision Tree C4.5</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --success: #28a745;
+            --warning: #ffc107;
+            --error: #dc3545;
+            --light: #f8f9fa;
+            --dark: #333;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        
+        .header h1 {
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .card h2 {
+            color: var(--primary);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid var(--primary);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--dark);
+            font-weight: bold;
+        }
+        
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            display: none;
+        }
+        
+        .result.success {
+            background: #d4edda;
+            border: 2px solid var(--success);
+            color: var(--success);
+        }
+        
+        .result.warning {
+            background: #fff3cd;
+            border: 2px solid var(--warning);
+            color: #856404;
+        }
+        
+        .result h3 {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+        
+        .confidence {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+        
+        .probabilities {
+            text-align: left;
+            margin: 20px 0;
+            background: rgba(255,255,255,0.3);
+            padding: 15px;
+            border-radius: 8px;
+        }
+        
+        .probability-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 0;
+        }
+        
+        .probability-bar {
+            flex-grow: 1;
+            height: 20px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 10px;
+            margin: 0 10px;
+            overflow: hidden;
+        }
+        
+        .probability-fill {
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            transition: width 0.5s ease;
+        }
+        
+        .error-message {
+            background: #f8d7da;
+            border: 2px solid var(--error);
+            color: var(--error);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .info-box {
+            background: var(--light);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .info-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .info-value {
+            color: var(--primary);
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-top: 5px;
+        }
+        
+        .footer {
+            background: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 15px;
+            color: #666;
+        }
+        
+        .api-info {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+            margin-bottom: 20px;
+        }
+        
+        .api-info strong {
+            color: var(--primary);
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🎓 Prediksi Kelulusan Mahasiswa</h1>
+            <p>Decision Tree C4.5 - Machine Learning Prediction System</p>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Form Card -->
+            <div class="card">
+                <h2>🔮 Form Prediksi</h2>
+                
+                <div class="api-info">
+                    <strong>Status API:</strong> <span id="api-status">Checking...</span>
+                </div>
+                
+                <form id="prediction-form">
+                    <div class="form-group">
+                        <label for="jenis_kelamin">👤 Jenis Kelamin</label>
+                        <select id="jenis_kelamin" required>
+                            <option value="">-- Pilih Jenis Kelamin --</option>
+                            <option value="Laki-laki">Laki-laki</option>
+                            <option value="Perempuan">Perempuan</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="asal_sma">🏫 Asal SMA</label>
+                        <select id="asal_sma" required>
+                            <option value="">-- Pilih Asal SMA --</option>
+                            <option value="SMA">SMA</option>
+                            <option value="SMK">SMK</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="nikah">💍 Status Pernikahan</label>
+                        <select id="nikah" required>
+                            <option value="">-- Pilih Status --</option>
+                            <option value="Belum">Belum</option>
+                            <option value="Sudah">Sudah</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="ukuran_program">📚 Ukuran Program</label>
+                        <select id="ukuran_program" required>
+                            <option value="">-- Pilih Program --</option>
+                            <option value="Reguler">Reguler</option>
+                            <option value="Ekstensi">Ekstensi</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">🚀 Lakukan Prediksi</button>
+                </form>
+                
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Memproses prediksi...</p>
+                </div>
+                
+                <div class="error-message" id="error-message"></div>
+            </div>
+            
+            <!-- Result Card -->
+            <div class="card">
+                <h2>📊 Hasil Prediksi</h2>
+                
+                <div class="result" id="result">
+                    <h3 id="result-title"></h3>
+                    <div class="confidence" id="confidence"></div>
+                    
+                    <div class="probabilities" id="probabilities-detail"></div>
+                    
+                    <div class="info-grid" id="input-data"></div>
+                </div>
+                
+                <div style="text-align: center; color: #999; padding: 40px 20px;" id="no-result">
+                    <p>📋 Hasil prediksi akan muncul di sini</p>
+                    <p style="margin-top: 10px; font-size: 0.9em;">Isi form dan klik "Lakukan Prediksi"</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>🎓 Sistem Prediksi Kelulusan Mahasiswa</strong></p>
+            <p>Menggunakan Decision Tree C4.5 | Universitas Teknologi Yogyakarta</p>
+            <p style="margin-top: 10px; font-size: 0.9em;">Powered by FastAPI & Machine Learning</p>
+        </div>
+    </div>
+    
+    <script>
+        const API_URL = window.location.hostname === 'localhost' 
+            ? 'http://localhost:8000'
+            : window.location.origin;
+        
+        // Check API health
+        async function checkAPIHealth() {
+            try {
+                const response = await fetch(`${API_URL}/api/health`);
+                const data = await response.json();
+                const statusEl = document.getElementById('api-status');
+                
+                if (data.model_loaded) {
+                    statusEl.textContent = '✅ Online & Model Loaded';
+                    statusEl.style.color = 'green';
+                } else {
+                    statusEl.textContent = '⚠️ API Online (Model not loaded)';
+                    statusEl.style.color = 'orange';
+                }
+            } catch (error) {
+                document.getElementById('api-status').textContent = '❌ Offline';
+                document.getElementById('api-status').style.color = 'red';
+            }
+        }
+        
+        // Handle form submission
+        document.getElementById('prediction-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Get form values
+            const jenisKelamin = document.getElementById('jenis_kelamin').value;
+            const asalSMA = document.getElementById('asal_sma').value;
+            const nikah = document.getElementById('nikah').value;
+            const ukuranProgram = document.getElementById('ukuran_program').value;
+            
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error-message').style.display = 'none';
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('no-result').style.display = 'block';
+            
+            try {
+                const response = await fetch(`${API_URL}/api/predict`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        jenis_kelamin: jenisKelamin,
+                        asal_sma: asalSMA,
+                        nikah: nikah,
+                        ukuran_program: ukuranProgram
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                // Display result
+                displayResult(data, {
+                    jenisKelamin,
+                    asalSMA,
+                    nikah,
+                    ukuranProgram
+                });
+                
+            } catch (error) {
+                console.error('Error:', error);
+                showError(`Prediction error: ${error.message}`);
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        });
+        
+        function displayResult(data, inputData) {
+            const resultEl = document.getElementById('result');
+            const resultTitle = document.getElementById('result-title');
+            const confidence = document.getElementById('confidence');
+            const probabilities = document.getElementById('probabilities-detail');
+            const inputDataEl = document.getElementById('input-data');
+            const noResult = document.getElementById('no-result');
+            
+            // Determine result type
+            const isSuccess = data.prediction === 'Tepat';
+            resultEl.className = `result ${isSuccess ? 'success' : 'warning'}`;
+            
+            const emoji = isSuccess ? '✅' : '⏰';
+            resultTitle.innerHTML = `${emoji} ${data.prediction}`;
+            
+            confidence.innerHTML = `Confidence: <strong>${data.confidence.toFixed(2)}%</strong>`;
+            
+            // Display probabilities
+            let probabilitiesHTML = '<strong>Probabilitas:</strong>';
+            for (const [className, prob] of Object.entries(data.probabilities)) {
+                probabilitiesHTML += `
+                    <div class="probability-item">
+                        <span>${className}</span>
+                        <div class="probability-bar">
+                            <div class="probability-fill" style="width: ${prob}%"></div>
+                        </div>
+                        <span>${prob.toFixed(2)}%</span>
+                    </div>
+                `;
+            }
+            probabilities.innerHTML = probabilitiesHTML;
+            
+            // Display input data
+            inputDataEl.innerHTML = `
+                <div class="info-box">
+                    <div class="info-label">👤 Jenis Kelamin</div>
+                    <div class="info-value">${inputData.jenisKelamin}</div>
+                </div>
+                <div class="info-box">
+                    <div class="info-label">🏫 Asal SMA</div>
+                    <div class="info-value">${inputData.asalSMA}</div>
+                </div>
+                <div class="info-box">
+                    <div class="info-label">💍 Status Pernikahan</div>
+                    <div class="info-value">${inputData.nikah}</div>
+                </div>
+                <div class="info-box">
+                    <div class="info-label">📚 Ukuran Program</div>
+                    <div class="info-value">${inputData.ukuranProgram}</div>
+                </div>
+            `;
+            
+            resultEl.style.display = 'block';
+            noResult.style.display = 'none';
+        }
+        
+        function showError(message) {
+            const errorEl = document.getElementById('error-message');
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+        }
+        
+        // Check API health on page load
+        window.addEventListener('load', checkAPIHealth);
+        
+        // Recheck every 30 seconds
+        setInterval(checkAPIHealth, 30000);
+    </script>
+</body>
+</html>
